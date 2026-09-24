@@ -264,7 +264,7 @@ Botti pyörii koodirepon GitHub Actionsissa. Ajo alkaa joka tunti noin 17 minuut
 Botti käynnistetään käsin koodirepon kohdasta **Actions → yt-chapters → Run workflow**:
 
 - **Aja heti** ajastusta odottamatta: jätä `video_id` tyhjäksi. Ajo julkaisee pushatut kuvaukset ja hakee uudet lähetykset ja tekstitykset.
-- **Lisää video** tai hae sen tekstitys uudelleen: kirjoita videon tunniste kenttään `video_id`. Video lisätään ja käsitellään samassa ajossa. Jos video on jo repossa, botti hakee tekstityksen uudelleen mutta ei kirjoita julkaisemattomien muokkauksien päälle. Koodirepo on julkinen, joten tunniste voi näkyä ajon tiedoissa.
+- **Lisää video** tai hae sen tekstitys uudelleen: kirjoita videon tunniste kenttään `video_id`. Video lisätään ja käsitellään samassa ajossa. Jos video on jo repossa, botti hakee tekstityksen uudelleen mutta ei kirjoita julkaisemattomien muokkauksien päälle, ja pushatut kuvausmuutokset julkaistaan samassa ajossa. Koodirepo on julkinen, joten tunniste voi näkyä ajon tiedoissa.
 
 `VIDEO_ID` on videon tunniste osoitteessa `https://youtu.be/VIDEO_ID`.
 

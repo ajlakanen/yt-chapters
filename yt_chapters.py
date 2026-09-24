@@ -750,9 +750,17 @@ def cmd_run(cfg, args) -> None:
     repo = Repo(cfg)
     repo.ensure()
     repo.pull()
+    run_cycle(yt, repo, db, cfg)
+
+
+def run_cycle(yt, repo: Repo, db, cfg) -> None:
     process_repo_changes(yt, repo, db, cfg)
     discover(yt, db, cfg)
     process_waiting(yt, repo, db, cfg)
+    # 'add' repossa jo olevalle videolle palauttaa sen jonoon, jolloin ensimmäinen
+    # julkaisukierros ohittaa sen. Viennin jälkeen julkaistaan siksi vielä kerran,
+    # jotta pushatut muokkaukset päätyvät YouTubeen samassa ajossa.
+    process_repo_changes(yt, repo, db, cfg)
 
 
 def cmd_add(cfg, args) -> None:
