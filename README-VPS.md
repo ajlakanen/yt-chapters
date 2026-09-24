@@ -31,6 +31,8 @@ Alla olevissa ohjeissa `OMISTAJA` tarkoittaa GitHub-käyttäjätunnustasi ja `PA
 
 ## Käyttö
 
+Kun olet asentanut botin, sen käyttö tapahtuu seuraavasti:
+
 1. (Sinä:) Pidä livelähetys normaaliin tapaan.
 2. (YouTube:) Livelähetyksen päättyessä YouTube tekee sille tekstityksen. Tämä voi kestää 24 tuntia tai kauemmin.
 3. (Botti:) Botti tarkistaa uudet livelähetykset tunnin välein.
@@ -42,9 +44,9 @@ Alla olevissa ohjeissa `OMISTAJA` tarkoittaa GitHub-käyttäjätunnustasi ja `PA
 9. (Botti:) Botti tarkistaa kuvauksen ja julkaisee sen YouTubeen seuraavalla ajolla, joka on tunnin välein.
 10. (Valinnainen:) Jos haluat julkaista heti, aja palvelimella `$Y run` (ks. [Komennot](#komennot)).
 
-### Mitä videokansio sisältää
+## Mitä videokansio sisältää
 
-Videon kansio on muotoa `videos/<pvm>-<videoID>/`. `<pvm>` on lähetyksen päättymispäivä, ja käsin lisätyllä (ks. [Komennot](#komennot)) videolla lisäyspäivä. Päivä on UTC-ajassa, joten Suomen iltana päättynyt lähetys voi saada edellisen päivän päivämäärän.
+Datarepo sisältää videokohtaiset kansiot, joissa on kuvaus ja tekstitys. Botti luo kansion automaattisesti. Kansion nimi on muotoa `videos/<pvm>-<videoID>/`. `<pvm>` on lähetyksen päättymispäivä, ja käsin lisätyllä (ks. [Komennot](#komennot)) videolla lisäyspäivä. Päivä on UTC-ajassa, joten Suomen iltana päättynyt lähetys voi saada edellisen päivän päivämäärän.
 
 Kansio sisältää seuraavat tiedostot. Sinä muokkaat vain tiedostoa `description.txt`. Botti muokkaa muita tiedostoja.
 
