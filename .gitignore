@@ -1,0 +1,5 @@
+# Salaisuudet ja paikalliset asetukset
+client_secret*.json
+token.json
+config.toml
+__pycache__/

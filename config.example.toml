@@ -1,0 +1,36 @@
+[general]
+state_dir = "/var/lib/yt-chapters"
+# Vain tämän jälkeen päättyneet lähetykset otetaan mukaan (ettei koko historia tule jonoon)
+start_after = "2026-01-01T00:00:00Z"
+caption_languages = ["fi", "en"]      # suosituimmuusjärjestys
+caption_check_interval_min = 50       # alle ajastimen välin, jotta tarkistus tehdään joka ajolla; 50 kiintiöyksikköä / tarkistus
+caption_max_wait_hours = 72
+transcript_window_sec = 15            # transcript.txt:n aikaikkunan pituus
+chapters_header = "Sisältö:"          # vain Claude API -ehdotuksissa
+context = "Yliopiston ohjelmointikurssin luento."
+
+[git]
+repo_url = "git@github.com:OMISTAJA/yt-chapters-data.git"
+# web_url = "https://github.com/OMISTAJA/yt-chapters-data"  # sähköpostien kansiolinkit; oletuksena päätellään repo_url:sta
+branch = "main"
+ssh_key = "/var/lib/yt-chapters/ssh/id_ed25519"   # deploy key, jolla on kirjoitusoikeus
+author_name = "yt-chapters"
+author_email = "yt-chapters@github-actions"
+
+# Valinnainen: Claude API kirjoittaa ehdotus.txt:n jokaiselle uudelle videolle
+[llm]
+enabled = false
+model = "claude-sonnet-5"
+api_key = ""          # tyhjä = ympäristömuuttuja ANTHROPIC_API_KEY
+max_tokens = 4096
+
+# Valinnainen: ilmoitukset sähköpostiin (uusi video, virheet, julkaisu). Poista osio, jos et halua.
+[email]
+enabled = false
+from_address = "yt.chapters.bot@gmail.com"
+to_address = "sinä@example.fi"
+username = "yt.chapters.bot@gmail.com"      # sama kuin from_address
+password = ""                               # Gmailin sovellussalasana, ks. README
+smtp_host = "smtp.gmail.com"
+smtp_port = 465
+smtp_starttls = false

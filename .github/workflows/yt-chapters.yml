@@ -1,0 +1,112 @@
+name: yt-chapters
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # tunnin välein, 17 min yli tasan (tasatunnit ovat ruuhkaisia)
+  workflow_dispatch:
+    inputs:
+      video_id:
+        description: "Lisää video ennen ajoa (VIDEO_ID, valinnainen)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yt-chapters
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STATE: /var/lib/yt-chapters
+      TILA: /var/lib/yt-chapters/tila
+      GIT_SSH_COMMAND: >-
+        ssh -i /var/lib/yt-chapters/ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes
+        -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/var/lib/yt-chapters/ssh/known_hosts
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Asenna kirjastot
+        run: pip install google-api-python-client google-auth-oauthlib anthropic
+
+      - name: Palauta tila ja salaisuudet
+        id: load
+        env:
+          CONFIG_TOML: ${{ secrets.CONFIG_TOML }}
+          YOUTUBE_TOKEN: ${{ secrets.YOUTUBE_TOKEN }}
+          DATA_DEPLOY_KEY: ${{ secrets.DATA_DEPLOY_KEY }}
+        run: |
+          sudo install -d -o "$(id -un)" -m 700 "$STATE" "$STATE/ssh"
+          umask 077
+          printf '%s\n' "$CONFIG_TOML" > "$STATE/config.toml"
+          printf '%s\n' "$YOUTUBE_TOKEN" > "$STATE/token.json"
+          printf '%s\n' "$DATA_DEPLOY_KEY" > "$STATE/ssh/id_ed25519"
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$STATE/ssh/known_hosts"
+
+          # Datarepon osoite ja haara asetuksista
+          python - "$STATE/config.toml" > "$STATE/data.env" <<'EOF'
+          import shlex, sys, tomllib
+          g = tomllib.load(open(sys.argv[1], "rb"))["git"]
+          print(f"DATA_REPO={shlex.quote(g['repo_url'])}")
+          print(f"DATA_BRANCH={shlex.quote(g.get('branch', 'main'))}")
+          EOF
+          . "$STATE/data.env"
+
+          # Tila tulee datarepon state-haarasta. Jos haaraa ei ole, aloitetaan tyhjästä.
+          # Jos haun tila on epäselvä, ajo keskeytetään, ettei tyhjä tila korvaa oikeaa.
+          git init -q "$TILA"
+          rc=0; git -C "$TILA" ls-remote --exit-code --heads "$DATA_REPO" state > /dev/null || rc=$?
+          if [ "$rc" = 0 ]; then
+            git -C "$TILA" fetch -q --depth=1 "$DATA_REPO" state
+            git -C "$TILA" checkout -q FETCH_HEAD
+            cp "$TILA/state.db" "$STATE/state.db"
+            if [ -e "$TILA/auth_alert_sent" ]; then cp "$TILA/auth_alert_sent" "$STATE/"; fi
+          elif [ "$rc" = 2 ]; then
+            echo "state-haaraa ei ole: ensimmäinen ajo, aloitetaan tyhjästä"
+          else
+            exit 1
+          fi
+
+      - name: Aja botti
+        id: run
+        timeout-minutes: 15
+        run: |
+          # Botin tuloste menee datarepon loki.txt:hen, ei julkiseen lokiin.
+          trap 'echo "Ajo epäonnistui. Syy on datarepon state-haaran tiedostossa loki.txt." >&3' ERR
+          exec 3>&1 >> "$TILA/loki.txt" 2>&1
+          echo "=== $(date -u '+%Y-%m-%d %H:%M:%S UTC') ==="
+          Y="python yt_chapters.py --config $STATE/config.toml"
+          VIDEO_ID=$(jq -r '.inputs.video_id // ""' "$GITHUB_EVENT_PATH")
+          if [ -n "$VIDEO_ID" ]; then $Y add "$VIDEO_ID"; fi
+          $Y run
+
+      - name: Tallenna tila
+        if: always() && steps.load.outcome == 'success'
+        env:
+          RUN_OUTCOME: ${{ steps.run.outcome }}
+        run: |
+          # state-haarassa on aina yksi commit: state.db, tila.txt, loki.txt ja tarvittaessa
+          # tieto jo lähetetystä kirjautumisilmoituksesta. Token ja avain eivät päädy sinne.
+          . "$STATE/data.env"
+          [ -e "$STATE/state.db" ] || exit 0
+          # Ennen botin ensimmäistä onnistunutta ajoa datarepossa ei ole päähaaraa.
+          # Silloin state-haaraa ei luoda, ettei siitä tule datarepon oletushaaraa.
+          git ls-remote --exit-code --heads "$DATA_REPO" "$DATA_BRANCH" > /dev/null || exit 0
+          python yt_chapters.py --config "$STATE/config.toml" status > "$TILA/tila.txt" 2>&1 || true
+          cd "$TILA"
+          cp "$STATE/state.db" .
+          if [ -e loki.txt ]; then tail -n 5000 loki.txt > loki.tmp; mv loki.tmp loki.txt; fi
+          rm -f auth_alert_sent
+          if [ -e "$STATE/auth_alert_sent" ] && [ "$RUN_OUTCOME" != success ]; then cp "$STATE/auth_alert_sent" .; fi
+          git add -A
+          commit=$(git -c user.name=yt-chapters -c user.email=yt-chapters@users.noreply.github.com \
+                     commit-tree -m "Botin tila" "$(git write-tree)")
+          git push -q -f "$DATA_REPO" "$commit:refs/heads/state"

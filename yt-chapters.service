@@ -1,0 +1,27 @@
+[Unit]
+Description=yt-chapters: YouTube-aikaleimat tekstityksistä
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ytchapters
+Group=ytchapters
+ExecStart=/opt/yt-chapters/venv/bin/python /opt/yt-chapters/yt_chapters.py --config /etc/yt-chapters/config.toml run
+StateDirectory=yt-chapters
+StateDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=15min
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
