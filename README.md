@@ -246,7 +246,7 @@ Jos pushaat kuvauksia nopeasti peräkkäin, ajot jonoutuvat. Tämä ei haittaa, 
 
 Botti pyörii koodirepon GitHub Actionsissa. Ajo alkaa joka tunti noin 17 minuuttia yli, mutta GitHubin ajastus voi myöhästyä ruuhkassa kymmeniä minuutteja.
 
-**Minuutit:** Julkisen koodirepon ajot eivät kuluta Actions-minuutteja. Kohdan 7 käynnistys-workflow on yksityisessä datarepossa, joten se kuluttaa tilin kiintiötä noin minuutin pushia kohden. Kiintiö on tilikohtainen, eli sen jakavat kaikki tilin yksityiset repot. Ilmaistilillä minuutteja on 2000 kuukaudessa.
+**Minuutit:** Julkisen koodirepon ajot eivät kuluta Actions-minuutteja. Kohdan 7 käynnistys-workflow on yksityisessä datarepossa, joten se kuluttaa tilin kiintiötä hieman, luokkaa 0,1 minuuttia per ajo. 
 
 **Ajastuksen poistuminen käytöstä:** GitHub poistaa julkisen repon ajastetut workflow't käytöstä, jos repossa ei ole ollut toimintaa 60 päivään. Botti kirjoittaa vain datarepoon, joten koodirepo voi hiljentyä. Ajastuksen saa takaisin päälle koodirepon Actions-välilehdeltä (yt-chapters → *Enable workflow*), ja sen poistumisen voi estää pushaamalla koodirepoon jotain 60 päivän välein.
 
