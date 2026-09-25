@@ -1,6 +1,6 @@
 # yt-chapters
 
-Tämä repo sisältää koodin ja opastuksen botin virittämiseen, joka hoitaa YouTube-livelähetysten kuvaukset ja aikaleimat. 
+Tämä repo sisältää koodin ja opastuksen botin virittämiseen, joka hoitaa YouTube-livelähetysten kuvaukset ja aikaleimat tekstitykseen perustuen. 
 
 Tämä ohje opastaa botin asentamisen ja käyttämisen GitHub Actionsin avulla. Botti voidaan ajaa myös omalla VPS:llä; siihen on [erillinen ohje](README-VPS.md).
 
