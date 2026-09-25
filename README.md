@@ -2,9 +2,9 @@
 
 Tämä repo sisältää koodin ja opastuksen botin virittämiseen, joka hoitaa YouTube-livelähetysten kuvaukset ja aikaleimat. 
 
-Tämä ohje opastaa asennuksen GitHub Actionsiin. Botti voidaan ajaa myös omalla VPS:llä; siihen on [erillinen ohje](README-VPS.md).
+Tämä ohje opastaa botin asentamisen ja käyttämisen GitHub Actionsin avulla. Botti voidaan ajaa myös omalla VPS:llä; siihen on [erillinen ohje](README-VPS.md).
 
-Tavoitteena on hyvin spesifin tarpeen täyttäminen: pitkien livelähetysten, esimerkiksi opetusluentojen, seminaarien ja vastaavien lähetysten katseleminen on aikaleimojen kanssa huomattavasti helpompaa. Aikaleimat auttavat siirtymään livelähetyksessä kiinnostavaan kohtaan ja ymmärtämään sen sisältöä paremmin - ja myöskin skippaamaan turhat mainokset. YouTube ei tee aikaleimoja automaattisesti, mutta tekee näihin kuitenkin automaattisen tekstityksen.
+Tavoitteena on hyvin spesifin tarpeen täyttäminen: YouTube-liven aikaleimojen tuottaminen automaattisesti tekstityksestä. Pitkien livelähetysten, esimerkiksi opetusluentojen, seminaarien ja vastaavien lähetysten katseleminen on aikaleimojen kanssa huomattavasti helpompaa. Aikaleimat auttavat siirtymään livelähetyksessä kiinnostavaan kohtaan ja ymmärtämään sen sisältöä paremmin - ja myöskin skippaamaan turhat mainokset. YouTube ei tee aikaleimoja automaattisesti, mutta tekee näihin kuitenkin automaattisen tekstityksen.
 
 Tämä botti hakee tuon tekstityksen ja nykyisen kuvauksen yksityiseen datarepoosi. Sinä muokkaat kuvausta lisäämällä aikaleimat mieleiselläsi tavalla, esimerkiksi kielimallin avulla (repo sisältää valmiiksi CLAUDE.md:n, mutta voit lisätä ohjeet haluamallesi kielimallille). Kun pusket päivitetyn kuvauksen datarepoon, botti julkaisee kuvauksen YouTubeen.
 
