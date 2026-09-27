@@ -41,11 +41,13 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]  # sama kuin auth.py:ssä
 MAX_DESCRIPTION = 5000
 MIN_CHAPTER_GAP = 10
 MAX_ATTEMPTS = 3
+API_RETRIES = 5  # YouTube API:n uudelleenyritykset (5xx, 429), viive enintään ~1 min
 
 WAITING, IN_REPO, FAILED = "waiting", "in_repo", "failed"
 ERRORS_FILE = "VIRHEET.txt"
@@ -386,8 +388,14 @@ def youtube_client(cfg):
     return build("youtube", "v3", credentials=creds, cache_discovery=False)
 
 
+def transient(ex: BaseException) -> bool:
+    """YouTuben palvelinvirhe tai ruuhka, joka menee yleensä ohi itsestään."""
+    return isinstance(ex, HttpError) and (ex.resp.status >= 500 or ex.resp.status == 429)
+
+
 def get_video(yt, vid: str) -> dict:
-    items = yt.videos().list(part="snippet,contentDetails", id=vid).execute().get("items", [])
+    resp = yt.videos().list(part="snippet,contentDetails", id=vid).execute(num_retries=API_RETRIES)
+    items = resp.get("items", [])
     if not items:
         raise RuntimeError(f"videota {vid} ei löydy")
     return items[0]
@@ -400,7 +408,7 @@ def update_description(yt, vid: str, description: str) -> str:
     snippet = {k: sn[k] for k in ("title", "categoryId", "tags", "defaultLanguage",
                                   "defaultAudioLanguage") if k in sn}
     snippet["description"] = description
-    resp = yt.videos().update(part="snippet", body={"id": vid, "snippet": snippet}).execute()
+    resp = yt.videos().update(part="snippet", body={"id": vid, "snippet": snippet}).execute(num_retries=API_RETRIES)
     return resp.get("snippet", {}).get("description", description)
 
 
@@ -549,7 +557,7 @@ def discover(yt, db, cfg) -> None:
     while True:
         resp = yt.liveBroadcasts().list(part="snippet", broadcastStatus="completed",
                                         broadcastType="all", maxResults=50,
-                                        pageToken=page).execute()
+                                        pageToken=page).execute(num_retries=API_RETRIES)
         for b in resp.get("items", []):
             end = b["snippet"].get("actualEndTime")
             if not end or parse_iso(end) < start_after:
@@ -569,7 +577,7 @@ def export_video(yt, repo: Repo, db, cfg, row, track: dict) -> None:
     """Vie tekstitys ja nykyinen kuvaus repoon."""
     g = cfg["general"]
     vid = row["video_id"]
-    srt = yt.captions().download_media(id=track["id"], tfmt="srt").execute()
+    srt = yt.captions().download_media(id=track["id"], tfmt="srt").execute(num_retries=API_RETRIES)
     if isinstance(srt, bytes):
         srt = srt.decode("utf-8", "replace")
     cues = parse_srt(srt)
@@ -632,7 +640,8 @@ def process_waiting(yt, repo: Repo, db, cfg) -> None:
             continue
         update(db, vid, last_checked=iso(now()))
         try:
-            items = yt.captions().list(part="snippet", videoId=vid).execute().get("items", [])
+            items = yt.captions().list(part="snippet", videoId=vid).execute(
+                num_retries=API_RETRIES).get("items", [])
             track = pick_track(items, langs)
             if track is None:
                 if now() - parse_iso(row["ended_at"] or row["added_at"]) > max_wait:
@@ -644,6 +653,8 @@ def process_waiting(yt, repo: Repo, db, cfg) -> None:
                 continue
             export_video(yt, repo, db, cfg, row, track)
         except Exception as ex:
+            if transient(ex):
+                raise  # ei lasketa yritykseksi, kierros keskeytyy siististi
             log.exception("%s: vienti epäonnistui", vid)
             attempts = row["attempts"] + 1
             update(db, vid, attempts=attempts, last_error=str(ex),
@@ -694,6 +705,8 @@ def process_repo_changes(yt, repo: Repo, db, cfg) -> None:
         try:
             saved = update_description(yt, vid, text)
         except Exception as ex:
+            if transient(ex):
+                raise
             log.exception("%s: julkaisu epäonnistui", vid)
             update(db, vid, last_error=str(ex))
             continue
@@ -750,7 +763,14 @@ def cmd_run(cfg, args) -> None:
     repo = Repo(cfg)
     repo.ensure()
     repo.pull()
-    run_cycle(yt, repo, db, cfg)
+    try:
+        run_cycle(yt, repo, db, cfg)
+    except HttpError as ex:
+        if not transient(ex):
+            raise
+        # Tila on tallessa (jokainen muutos commitoidaan heti), joten seuraava ajo jatkaa siitä.
+        log.warning("YouTube ei vastaa (HTTP %s), kierros keskeytetty; jatketaan seuraavalla ajolla",
+                    ex.resp.status)
 
 
 def run_cycle(yt, repo: Repo, db, cfg) -> None:
